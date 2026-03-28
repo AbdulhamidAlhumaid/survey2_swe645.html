@@ -2,33 +2,26 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "medu4464/swe645-hw2-survey:1.0"
-        KUBECONFIG_PATH = "/etc/rancher/rke2/rke2.yaml"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        IMAGE_NAME = "yourdockerhubusername/survey-app"
     }
 
-stage('Clone Repository') {
-    steps {
-        git branch: 'main', url: 'https://github.com/AbdulhamidAlhumaid/survey2_swe645.html.git'
-    }
-}
+    stages {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                script {
+                    docker.build("${IMAGE_NAME}:latest")
+                }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'USERNAME',
-                    passwordVariable: 'PASSWORD'
-                )]) {
-                    sh '''
-                    echo $PASSWORD | docker login -u $USERNAME --password-stdin
-                    docker push $DOCKER_IMAGE
-                    '''
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
+                        docker.image("${IMAGE_NAME}:latest").push()
+                    }
                 }
             }
         }
@@ -36,8 +29,8 @@ stage('Clone Repository') {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                sudo KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl apply -f deployment.yaml
-                sudo KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl rollout restart deployment swe645-survey-deployment
+                kubectl apply -f deployment.yaml
+                kubectl apply -f service.yaml
                 '''
             }
         }
