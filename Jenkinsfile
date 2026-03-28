@@ -6,12 +6,11 @@ pipeline {
         KUBECONFIG_PATH = "/etc/rancher/rke2/rke2.yaml"
     }
 
-    stages {
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/AbdulhamidAlhumaid/survey2_swe645.html.git'
-            }
-        }
+stage('Clone Repository') {
+    steps {
+        git branch: 'main', url: 'https://github.com/AbdulhamidAlhumaid/survey2_swe645.html.git'
+    }
+}
 
         stage('Build Docker Image') {
             steps {
